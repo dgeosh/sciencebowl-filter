@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Packet Extractor</title>
+        <script>
+            async function handleFileUpload(event) {
+                event.preventDefault(); // Prevent form redirection
+
+                const formData = new FormData(event.target); // Get the form data
+                const response = await fetch("/upload", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const result = await response.text();
+                sessionStorage.setItem("packet", result);
+                activateFilter();
+            }
+            async function activateFilter() {
+                let filter = document.getElementById("filter");
+                let result = "";
+                console.log(filter.value);
+                let packet = JSON.parse(sessionStorage.getItem("packet"));
+                let counter = (document.getElementById("startFrom").value - 1) * 2;
+                for (let i = 0; i < packet.questions.length; i++) {
+                    if (filter.value == "") {
+                        result = result.concat(
+                            "\n\n",
+                            packet.weights[i],
+                            "\n",
+                            Math.floor(((counter++)+2)/2),
+                            ")\u00a0",
+                            packet.categories[i],
+                            "\u00a0\u00a0\u00a0–\u00a0\u00a0\u00a0",
+                            packet.types[i],
+                            "\u00a0\u00a0\u00a0\u00a0",
+                            packet.questions[i]
+                        );
+                    } else if (
+                        packet.categories[i].toLowerCase() ==
+                        filter.value.toLowerCase()
+                    )
+                        result = result.concat(
+                            "\n\n",
+                            packet.weights[i],
+                            "\n",
+                            Math.floor(((counter++)+2)/2),
+                            ")\u00a0",
+                            packet.categories[i],
+                            "\u00a0\u00a0\u00a0–\u00a0\u00a0\u00a0",
+                            packet.types[i],
+                            "\u00a0\u00a0\u00a0\u00a0",
+                            packet.questions[i]
+                        );
+                    if (
+                        packet.types[i].toLowerCase() == "multiple choice" &&
+                        (packet.categories[i].toLowerCase() ==
+                            filter.value.toLowerCase() ||
+                            filter.value == "")
+                    ) {
+                        let choices = "";
+                        choices = choices.concat(
+                            "\nW) ",
+                            packet.choices[i][0],
+                            "\nX) ",
+                            packet.choices[i][1],
+                            "\nY) ",
+                            packet.choices[i][2],
+                            "\nZ) ",
+                            packet.choices[i][3]
+                        );
+                        result = result.concat("\n", choices);
+                    }
+                    if (
+                        (packet.categories[i].toLowerCase() ==
+                            filter.value.toLowerCase() ||
+                            filter.value == "")
+                    )
+                        result = result.concat("\n\nANSWER: ", packet.answers[i]);
+                }
+                document.getElementById("response").innerText = result;
+            }
+        </script>
+    </head>
+    <body>
+        <h1>Packet Extractor</h1>
+        <form
+            id="uploadForm"
+            onsubmit="handleFileUpload(event)"
+            enctype="multipart/form-data"
+        >
+            <label for="file">Choose a file:</label>
+            <input type="file" name="file" id="file" required />
+            <button type="submit">Upload</button>
+        </form>
+        Filter:
+        <select id="filter">
+            <option value="">Please select</option>
+            <option value="Math">Math</option>
+            <option value="Physics">Physics</option>
+            <option value="Biology">Biology</option>
+            <option value="Earth and Space">Earth and Space</option>
+            <option value="Chemistry">Chemistry</option>
+            <option value="Energy">Energy</option>
+        </select>
+        <button id="activateFilter" onclick="activateFilter()">Filter!</button><br>
+        Start from... <input id="startFrom" type="number" value="1"><br>
+        <p id="response" style="margin-top: 20px; color: green"></p>
+    </body>
+</html>
